@@ -887,7 +887,8 @@ export default function App() {
       ) : !dadosDisponiveis ? (
         <EmptyState ano={ano} mes={meses[mes - 1]} produto={produto} />
       ) : (
-        <>
+        <div id="produto-pdf-area">
+          <BotoesExportPDF tituloProduto={produto?.nome || "Assinaturas_V_Plus"} ano={ano} mes={mes} meses={meses} />
           {/* KPIs */}
           <section className="kpi-grid mb-6">
             <KPICard
@@ -1063,43 +1064,6 @@ export default function App() {
           {/* RANKING DE CONSULTORES */}
           <RankingConsultores ano={ano} mes={mes} metaMensal={metricas.metaMensal} />
 
-          {/* RANKING DE PRODUTOS */}
-          <section className="card rounded-xl p-6 mb-6">
-            <h2 className="display-font text-2xl font-light mb-1">Visão geral por produto</h2>
-            <p className="text-stone-400 text-sm mb-4">
-              Vendido até dia {diaCorte} em {meses[mes - 1]}/{ano}. Produtos com dados pendentes aparecem em cinza.
-            </p>
-            <div className="space-y-2">
-              {ranking.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-4 p-3 rounded-lg"
-                  style={{
-                    background: p.disponivel ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.01)",
-                    border: p.id === produtoId ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(255,255,255,0.04)",
-                    opacity: p.disponivel ? 1 : 0.4,
-                  }}
-                >
-                  <div className="w-1 h-8 rounded-full" style={{ background: p.cor }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">{p.nome}</div>
-                    <div className="mono-font text-xs text-stone-500">
-                      {p.disponivel ? formatBRL(p.valor) : "Aguardando dados"}
-                    </div>
-                  </div>
-                  {p.disponivel ? (
-                    <span className={p.delta >= 0 ? "chip-pos" : "chip-neg"}>
-                      {p.delta >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                      {formatPct(p.delta)}
-                    </span>
-                  ) : (
-                    <span className="chip-neutro">pendente</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-
           {/* TABELA HISTÓRICA */}
           <section className="card rounded-xl p-6">
             <h2 className="display-font text-2xl font-light mb-1">Histórico mensal — {produto.nome}</h2>
@@ -1180,7 +1144,7 @@ export default function App() {
               </table>
             </div>
           </section>
-        </>
+        </div>
       )}
 
       <footer className="mt-10 pt-6 border-t border-white/5 flex items-center justify-between text-xs text-stone-500 flex-wrap gap-2">
@@ -1406,37 +1370,58 @@ function BotoesExportPDF({ tituloProduto, ano, mes, meses }) {
         });
       }
       
-      // Captura o conteúdo principal
-      const elemento = document.querySelector('#produto-pdf-area') || document.querySelector('main') || document.body;
+      // Captura o conteúdo principal (página INTEIRA)
+      // Esconde os botões de PDF temporariamente
+      const botoes = document.querySelectorAll('.print\\:hidden');
+      botoes.forEach(b => b.style.visibility = 'hidden');
+      
+      // Aguarda 200ms pra garantir reflow
+      await new Promise(r => setTimeout(r, 200));
+      
+      const elemento = document.querySelector('#produto-pdf-area') || document.querySelector('main');
+      
+      // Pegar dimensões reais (incluindo overflow scroll)
+      const altura = Math.max(elemento.scrollHeight, elemento.offsetHeight);
+      const largura = Math.max(elemento.scrollWidth, elemento.offsetWidth);
       
       const canvas = await window.html2canvas(elemento, {
         backgroundColor: '#0a0a0a',
-        scale: 2,
+        scale: 1.5, // bom equilíbrio qualidade/tamanho
         useCORS: true,
         allowTaint: true,
         logging: false,
+        width: largura,
+        height: altura,
+        windowWidth: largura,
+        windowHeight: altura,
+        scrollX: 0,
+        scrollY: 0,
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      // Restaura botões
+      botoes.forEach(b => b.style.visibility = '');
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.92); // JPEG com 92% qualidade (menor que PNG)
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const pdfWidth = pdf.internal.pageSize.getWidth();   // ~210mm
+      const pdfHeight = pdf.internal.pageSize.getHeight(); // ~297mm
       const imgProps = pdf.getImageProperties(imgData);
       const imgWidth = pdfWidth;
       const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
       
+      // Adiciona páginas até cobrir toda a imagem
       let heightLeft = imgHeight;
       let position = 0;
       
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
       heightLeft -= pdfHeight;
       
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pdfHeight;
       }
       
@@ -1445,6 +1430,9 @@ function BotoesExportPDF({ tituloProduto, ano, mes, meses }) {
     } catch (err) {
       console.error('Erro ao gerar PDF:', err);
       alert('Erro ao gerar PDF. Tente o "Imprimir PDF" do navegador (Ctrl+P).');
+      // Restaura botões em caso de erro
+      const botoes = document.querySelectorAll('.print\\:hidden');
+      botoes.forEach(b => b.style.visibility = '');
     } finally {
       setExportando(false);
     }
@@ -1672,38 +1660,7 @@ function RankingConsultores({ ano, mes, metaMensal }) {
   const diasAtivosTotal = ranking.reduce((a, b) => a + b.dias_ativos, 0);
 
   return (
-    <div id="produto-pdf-area">
-      <BotoesExportPDF tituloProduto="Assinaturas_V_Plus" ano={ano} mes={mes} meses={["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]} />
-      
-      {/* VELOCIDADE & PROJEÇÃO - Assinaturas V+ */}
-      {metaMensal && metaMensal > 0 && (
-        <KPIVelocidadeProjecao 
-          realizado={totalTime} 
-          meta={metaMensal} 
-          ano={ano} 
-          mes={mes}
-          produtoTipo="geral"
-        />
-      )}
-
-      {/* EVOLUÇÃO DIÁRIA ACUMULADA - Assinaturas V+ */}
-      {metaMensal && metaMensal > 0 && (() => {
-        const serie = (DADOS_ASSINATURAS[`${ano}-${mes}`] || []).map(r => [r[0], r[1]]);
-        const serieAnt = (DADOS_ASSINATURAS[`${ano-1}-${mes}`] || []).map(r => [r[0], r[1]]);
-        return (
-          <EvolucaoAcumulada
-            diasAtual={serie}
-            diasAnterior={serieAnt}
-            meta={metaMensal}
-            ano={ano}
-            mes={mes}
-            meses={["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]}
-            unidade="valor"
-            produtoTipo="geral"
-          />
-        );
-      })()}
-
+    <>
     <section className="card rounded-xl p-6 mb-6">
       <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
         <div>
@@ -1959,7 +1916,7 @@ function RankingConsultores({ ano, mes, metaMensal }) {
         </div>
       </div>
     </section>
-    </div>
+    </>
   );
 }
 
