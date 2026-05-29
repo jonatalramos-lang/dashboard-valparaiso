@@ -311,7 +311,7 @@ const OVERRIDES_DIRETORIA = {
       bilheteria_park: 58629.10,
       bilheteria_online: 64515.03,
       quiosque_ilha: 0,
-      assinaturas: 288250.10,
+      assinaturas: 287519.14,
       passaporte_corp: 122392.87,
       consumo: 492093.47,
       eventos: 111895.14,
