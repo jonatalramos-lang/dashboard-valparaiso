@@ -595,6 +595,39 @@ const DADOS_TRAFEGO = {
       { nome: "Feriadão", campanha: "CP226 · Feed + Stories", url: "https://fb.me/adspreview/managedaccount/24kTOie2Z7m19TM" },
     ],
   },
+  "2026-6": {
+    dataVerificacao: "12/06/2026",
+    proximaOtimizacao: "19/06/2026",
+    status: "amarelo",
+    statusNota: "Campanha CP165 otimizada · separação de conjuntos por região (Pará / Tocantins). Google negativando termos irrelevantes.",
+    periodoNota: "Dados referentes aos últimos 7 dias de Junho até 12/06.",
+    plataformas: [
+      { nome: "Meta ADS", icone: "📘", cpa: 25.14, conversoes: 147, labelConv: "Vendas", cor: "#1877f2" },
+      { nome: "Google ADS", icone: "🔍", cpa: 6.97, conversoes: 140, labelConv: "Vendas", cor: "#ea4335" },
+    ],
+    campanhas: [
+      { plataforma: "Meta", produto: "Assinatura V+", objetivo: "Mensagens", icone: "📩", investido: 1323.64, resultado: 225, labelResultado: "mensagens", cpa: 5.88, cor: "#1877f2" },
+      { plataforma: "Meta", produto: "Eventos", objetivo: "Mensagens", icone: "📩", investido: 1282.32, resultado: 440, labelResultado: "mensagens", cpa: 2.91, cor: "#1877f2" },
+      { plataforma: "Meta", produto: "Ingressos Online", objetivo: "Vendas", icone: "🎟️", investido: 798.93, resultado: 147, labelResultado: "vendas", cpa: 5.43, cor: "#1877f2" },
+      { plataforma: "Meta", produto: "Ingressos Online", objetivo: "Mensagens", icone: "📩", investido: 291.52, resultado: 36, labelResultado: "mensagens", cpa: 8.10, cor: "#1877f2" },
+      { plataforma: "Google", produto: "Ingressos Online", objetivo: "Vendas", icone: "🎟️", investido: 978.94, resultado: 140, labelResultado: "vendas", cpa: 6.97, cor: "#ea4335" },
+    ],
+    otimizacoes: [
+      { plataforma: "Meta", cor: "#1877f2", responsavel: "Wolf", acoes: [
+        "Pausei anúncio [AD03] · Experiência Tirolesa (CP165 · Frio · Ingressos Online) por alto custo — R$ 38,17 de CPA.",
+        "Pausei anúncio Emilly de Férias no conjunto Pará/Tocantins por alto custo — R$ 94,85 de CPA.",
+        "Fiz separação dos conjuntos por região: um para Tocantins e outro para Pará.",
+      ] },
+      { plataforma: "Google", cor: "#ea4335", responsavel: "—", acoes: [
+        "Negativei termos de pesquisa irrelevantes e termos que gastaram sem gerar conversão.",
+      ] },
+    ],
+    criativos: [
+      { nome: "Experiência Tirolesa (pausado)", roas: null, cpa: 38.17, url: "https://fb.me/adspreview/managedaccount/1RhYfO61gkI9C7R", destaque: false },
+      { nome: "Emilly de Férias (pausado PA/TO)", roas: null, cpa: 94.85, url: "https://fb.me/adspreview/managedaccount/2drqq6PnAKyETmX", destaque: false },
+    ],
+    criativosNovos: [],
+  },
 };
 
 // ============================================================
@@ -606,7 +639,7 @@ const formatBRL2 = (v) =>
 const formatBRL = (v) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
 
-const formatPct = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+const formatPct = (v) => v != null ? `${v >= 0 ? "+" : ""}${v.toFixed(1)}%` : "—";
 
 const diasNoMes = (ano, mes) => new Date(ano, mes, 0).getDate();
 
@@ -5177,7 +5210,7 @@ function TrafegoView({ ano, mes, meses }) {
                 <div className="flex gap-6">
                   <div className="text-right">
                     <div className="text-[10px] uppercase tracking-widest text-stone-500">ROAS</div>
-                    <div className="display-font text-xl font-light text-emerald-400" style={{ fontVariantNumeric: "tabular-nums" }}>{cr.roas.toFixed(2)}x</div>
+                    <div className="display-font text-xl font-light text-emerald-400" style={{ fontVariantNumeric: "tabular-nums" }}>{cr.roas != null ? cr.roas.toFixed(2) + "x" : "—"}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-[10px] uppercase tracking-widest text-stone-500">CPA</div>
@@ -5190,7 +5223,7 @@ function TrafegoView({ ano, mes, meses }) {
         </div>
         <p className="text-stone-500 text-xs mt-4 leading-relaxed">
           ROAS = retorno sobre investimento em anúncio (receita ÷ gasto). Acima de 1x já é lucrativo;
-          a Tirolesa a {dados.criativos[0].roas.toFixed(1)}x está retornando {dados.criativos[0].roas.toFixed(0)}× o investido.
+          a Tirolesa a {dados.criativos[0]?.roas != null ? dados.criativos[0].roas.toFixed(1) + "x" : "—"} está retornando {dados.criativos[0]?.roas != null ? dados.criativos[0].roas.toFixed(0) + "×" : "—"} o investido.
         </p>
 
         {dados.criativosNovos && dados.criativosNovos.length > 0 && (
